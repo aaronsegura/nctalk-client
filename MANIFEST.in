@@ -1,0 +1,2 @@
+include nctalk_client/assets/*
+include README.md
