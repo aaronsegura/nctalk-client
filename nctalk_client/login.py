@@ -32,38 +32,39 @@ class LoginWindow(object):
 
         endpoint_label = ttk.Label(frame, text='Endpoint:')
         endpoint_input = tk.Entry(frame, width=40, textvariable=self.endpoint)
-        endpoint_input.bind("<Tab>", self.__next_widget)
+        endpoint_input.bind("<Tab>", self.next_widget)
         endpoint_label.grid(row=1, column=0)
         endpoint_input.grid(row=1, column=1, columnspan=2)
 
         user_label = ttk.Label(frame, text='Username:')
         user_input = tk.Entry(frame, width=40, textvariable=self.user)
-        user_input.bind("<Tab>", self.__next_widget)
+        user_input.bind("<Tab>", self.next_widget)
         user_label.grid(row=2, column=0)
         user_input.grid(row=2, column=1, columnspan=2)
 
         password_label = ttk.Label(frame, text='Password:')
         password_input = tk.Entry(frame, width=40, textvariable=self.password, show='*')
-        password_input.bind('<Tab>', self.__next_widget)
+        password_input.bind('<Tab>', self.next_widget)
         password_label.grid(row=3, column=0)
         password_input.grid(row=3, column=1, columnspan=2)
 
         login_button = ttk.Button(frame, text='Login')
-        login_button.bind('<Return>', self.__nextcloud_login)
+        login_button.bind('<Return>', lambda event: self.nextcloud_login(event))
         login_button.grid(row=4, column=2, sticky='e', pady=5)
 
         quit_button = ttk.Button(frame, text='Quit', command=lambda: self.master.close())
         quit_button.bind('<Return>', lambda event: self.master.close())
         quit_button.grid(row=4, column=0, sticky='e', pady=5)
 
-        # Login Button
-        login_button['command'] = lambda: self.__nextcloud_login(None, login_button)
-        user_input.bind('<Return>', lambda event: self.__nextcloud_login(event, login_button))
+        login_button['command'] = lambda: self.nextcloud_login(None, login_button)
+        user_input.bind('<Return>', lambda _: self.nextcloud_login())
         password_input.bind('<Return>',
-                            lambda event: self.__nextcloud_login(event, login_button))
+                            lambda _: self.nextcloud_login())
         endpoint_input.bind('<Return>',
-                            lambda event: self.__nextcloud_login(event, login_button))
+                            lambda _: self.nextcloud_login())
 
+        # Give proper Entry() input the focus, depending on
+        # what information is already available
         if not endpoint:
             endpoint_input.focus()
         elif not user:
@@ -71,11 +72,11 @@ class LoginWindow(object):
         else:
             password_input.focus()
 
-    def __next_widget(self, event):
+    def next_widget(self, event):
         event.widget.tk_focusNext().focus()
         return("break")
 
-    def __nextcloud_login(self, event: Union[tk.Event, None], login_button: tk.Button):
+    def nextcloud_login(self):
         self.master.log(f'Logging in to {self.endpoint.get()}')
         try:
             self.nct = nctalk.NextCloudTalk(
