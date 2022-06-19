@@ -1,9 +1,9 @@
-import nctalk
+import httpx
 
-from typing import Union
+import nextcloud_aio
 
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 
 
 class LoginWindow(object):
@@ -25,8 +25,9 @@ class LoginWindow(object):
         self.window.title('Nextcloud Login')
         self.window.geometry('480x120')
         self.window.attributes('-topmost', True)
-        self.window.bind('<Escape>', lambda e: self.master.close())
+        self.window.bind('<Escape>', lambda _: self.master.close())
 
+    async def start(self):
         frame = ttk.Frame(self.window)
         frame.pack(pady=5)
 
@@ -49,14 +50,14 @@ class LoginWindow(object):
         password_input.grid(row=3, column=1, columnspan=2)
 
         login_button = ttk.Button(frame, text='Login')
-        login_button.bind('<Return>', lambda event: self.nextcloud_login(event))
+        login_button.bind('<Return>', lambda _: self.nextcloud_login())
         login_button.grid(row=4, column=2, sticky='e', pady=5)
 
         quit_button = ttk.Button(frame, text='Quit', command=lambda: self.master.close())
-        quit_button.bind('<Return>', lambda event: self.master.close())
+        quit_button.bind('<Return>', lambda _: self.master.close())
         quit_button.grid(row=4, column=0, sticky='e', pady=5)
 
-        login_button['command'] = lambda: self.nextcloud_login(None, login_button)
+        login_button['command'] = lambda: self.nextcloud_login()
         user_input.bind('<Return>', lambda _: self.nextcloud_login())
         password_input.bind('<Return>',
                             lambda _: self.nextcloud_login())
@@ -65,9 +66,9 @@ class LoginWindow(object):
 
         # Give proper Entry() input the focus, depending on
         # what information is already available
-        if not endpoint:
+        if not self.endpoint.get():
             endpoint_input.focus()
-        elif not user:
+        elif not self.user.get():
             user_input.focus()
         else:
             password_input.focus()
@@ -77,18 +78,18 @@ class LoginWindow(object):
         return("break")
 
     def nextcloud_login(self):
-        self.master.log(f'Logging in to {self.endpoint.get()}')
-        try:
-            self.nct = nctalk.NextCloudTalk(
-                user=self.user.get(),
-                password=self.password.get(),
-                endpoint=self.endpoint.get())
-        except nctalk.exceptions.NextCloudTalkException as e:
-            messagebox.showerror(title='Login Failed', message=e)
-            self.master.log(f'Failed login: {e}')
-        else:
-            if self.nct.user_data:
-                self.master.log(r'Success!')
-                self.master.logged_in = True
-                self.master.nct = self.nct
-                self.window.destroy()
+        self.master.loop.create_task(self.__nextcloud_login())
+
+    async def __nextcloud_login(self):
+        await self.master.log(f'Logging in to {self.endpoint.get()}')
+        self.nct = nextcloud_aio.NextCloudAsync(
+            client=httpx.AsyncClient(),
+            user=self.user.get(),
+            password=self.password.get(),
+            endpoint=self.endpoint.get())
+
+        if await self.nct.get_user():
+            await self.master.log(r'Success!')
+            self.master.logged_in = True
+            self.master.nct = self.nct
+            self.window.destroy()

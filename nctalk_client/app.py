@@ -11,8 +11,8 @@ from tkinter import DISABLED, NORMAL, ttk
 from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 
-from nctalk_client.login import LoginWindow
-from nctalk_client.rooms import Room
+from .login import LoginWindow
+from .rooms import Room
 
 
 class MyApp(tk.Tk):
@@ -20,19 +20,22 @@ class MyApp(tk.Tk):
     def __init__(self, loop: asyncio.BaseEventLoop, interval: float = 1/120):
         super().__init__()
 
-        # Set up the event loop
-        self.nct = None  # NextCloudTalk client object
+        self.logs = asyncio.Queue()
+
+        self.nct = None
         self.logged_in = False
 
         self.rooms = []
 
         self.loop = loop
-        self.tasks = [loop.create_task(self.mainloop(interval))]
+        self.tasks = [
+            loop.create_task(self.mainloop(interval)),
+            loop.create_task(self.watch_for_logs())]
 
         self.protocol("WM_DELETE_WINDOW", self.close)
-        self.main_window()
 
     def run(self):
+        self.loop.create_task(self.main_window())
         self.loop.run_forever()
 
     def load_config(self) -> dict:
@@ -61,19 +64,24 @@ class MyApp(tk.Tk):
             self.update()
             await asyncio.sleep(interval)
 
-    def log(self, text: str, level: int = logging.INFO):
+    async def log(self, text: str, level: int = logging.INFO):
         """Write a message to the application log window and console."""
+
         now = dt.datetime.now().strftime(r'%Y/%m/%d %H:%M:%S')
         line = f'{now} - {text}'
+        await self.logs.put(line)
 
+    async def watch_for_logs(self):
         # TODO: Text colors based on log level
-        self.applog.config(state=NORMAL)
-        self.applog.insert(tk.INSERT, f'{line}\n')
-        self.applog.config(state=DISABLED)
-        self.applog.update()
-        print(line)
+        while True:
+            while logmsg := await self.logs.get():
+                self.applog.config(state=NORMAL)
+                self.applog.insert(tk.INSERT, f'{logmsg}\n')
+                self.applog.config(state=DISABLED)
+                self.applog.update()
+                print(logmsg)
 
-    def main_window(self):
+    async def main_window(self):
         """The main application window."""
         self.title('Nextcloud Talk')
         self.geometry('800x600')
@@ -87,40 +95,42 @@ class MyApp(tk.Tk):
         if not self.logged_in:
             login_window = LoginWindow(self, **config)
             login_window.window.protocol("WM_DELETE_WINDOW", self.close)
+            await login_window.start()
             self.loop.create_task(self.wait_for_auth())
 
         self.room_tabs = ttk.Notebook(frame)
         self.room_tabs.pack(fill='both', expand=True)
+        self.room_tabs.enable_traversal()
+        self.room_tabs.bind("<<NotebookTabChanged>>", self.room_tab_changed)
 
         self.applog = ScrolledText(self.room_tabs, height=50, width=120)
         self.applog.pack(fill='both', expand=True, padx=1, pady=1)
 
         self.room_tabs.add(self.applog, text='nctalk-client')
 
-        self.log("Startup")
+        await self.log("Startup")
 
     async def wait_for_auth(self):
         """Wait for LoginWindow() to populate the NextCloudTalk client."""
         while not self.nct:
             await asyncio.sleep(1/5)
         else:
-            self.initialize_rooms()
+            await self.initialize_rooms()
 
-    def initialize_rooms(self):
+    def room_tab_changed(self, event):
+        pass
+
+    async def initialize_rooms(self):
         """Open tabs for each room and initialize Room objects."""
-        self.log(f'Fetching rooms from {self.nct.url}')
-        rooms = self.nct.conversation_list()
+        await self.log(f'Fetching rooms from {self.nct.endpoint}')
+        rooms = await self.nct.get_conversations()
 
         for c in rooms:
-            self.log(f'Joining room "{c.displayName}"')
+            await self.log(f'Joining room "{c["displayName"]}"')
             self.loop.create_task(self.new_room(c))
 
-    async def new_room(self, conversation):
-        room = Room(self, conversation)
-        self.rooms.append(room)
-
-        room_text = ScrolledText(self.room_tabs)
-        self.room_tabs.add()
+    async def new_room(self, data):
+        self.rooms.append(Room(self, data))
 
     def close(self):
         for task in self.tasks:
