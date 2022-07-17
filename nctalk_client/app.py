@@ -1,22 +1,23 @@
+"""Nextcloud Talk Client."""
+
 import asyncio
 import logging
-import os
-import platform
+import platformdirs as pdir
 import json
 
 import datetime as dt
 import tkinter as tk
 
 from tkinter import DISABLED, NORMAL, ttk
-from tkinter import messagebox
 from tkinter.scrolledtext import ScrolledText
 
 from .login import LoginWindow
 from .rooms import Room
+from .menu import MenuBar
 
 
 class MyApp(tk.Tk):
-
+    """A tkinter-based application for NextCloud Talk interaction."""
     def __init__(self, loop: asyncio.BaseEventLoop, interval: float = 1/120):
         super().__init__()
 
@@ -40,19 +41,15 @@ class MyApp(tk.Tk):
 
     def load_config(self) -> dict:
         """Load cloud information from config file, if one exists."""
-        match platform.system():
-            case 'Linux':
-                config_filename = f'{os.environ["HOME"]}/.nctalk-client'
-            case 'Darwin':
-                config_filename = f'{os.environ["HOME"]}/Library/Preferences/'
-            case _:
-                messagebox.showerror(
-                    title='Unknown Platform',
-                    message=f'Platform {platform.system()} unknown.')
-                self.close()
+
+        config_dir = pdir.user_config_path("nctalk")
+        if not config_dir.exists():
+            return {}
+
+        config_file = f'{config_dir}/credentials.json'
 
         try:
-            with open(config_filename, "r") as config_file:
+            with open(config_file, "r") as config_file:
                 config = json.loads(config_file.read())
         except IOError:
             config = {}
@@ -84,16 +81,18 @@ class MyApp(tk.Tk):
     async def main_window(self):
         """The main application window."""
         self.title('Nextcloud Talk')
-        self.geometry('800x600')
+        # self.geometry('800x600')
         self.bind('<Control-q>', lambda event: self.close())
 
         frame = ttk.Frame(self)
         frame.pack(fill='both', expand=True)
 
-        config = self.load_config()
+        self.app_config = self.load_config()
+
+        self.config(menu=MenuBar(self))
 
         if not self.logged_in:
-            login_window = LoginWindow(self, **config)
+            login_window = LoginWindow(self, **self.app_config)
             login_window.window.protocol("WM_DELETE_WINDOW", self.close)
             await login_window.start()
             self.loop.create_task(self.wait_for_auth())
@@ -106,7 +105,7 @@ class MyApp(tk.Tk):
         self.applog = ScrolledText(self.room_tabs, height=50, width=120)
         self.applog.pack(fill='both', expand=True, padx=1, pady=1)
 
-        self.room_tabs.add(self.applog, text='nctalk-client')
+        self.room_tabs.add(self.applog, text='#logs')
 
         await self.log("Startup")
 
@@ -122,7 +121,7 @@ class MyApp(tk.Tk):
 
     async def initialize_rooms(self):
         """Open tabs for each room and initialize Room objects."""
-        await self.log(f'Fetching rooms from {self.nct.endpoint}')
+        await self.log('Fetching rooms...')
         rooms = await self.nct.get_conversations()
 
         for c in rooms:

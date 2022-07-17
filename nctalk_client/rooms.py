@@ -15,7 +15,6 @@ class Room(object):
         self.ncs = master.nct
         self.master = master
         self.new_msgs = asyncio.Queue()
-        self.msgs = set()
 
         frame = ttk.Frame(self.master.room_tabs)
         frame.grid(row=0, column=0)
@@ -69,7 +68,6 @@ class Room(object):
                 self.room_text.configure(state=NORMAL)
                 line = f'{msg["timestamp"]} {msg["actorDisplayName"]}: {msg["message"]}\n'
                 self.room_text.insert(tk.INSERT, line)
-                # self.msgs.add(msg)
                 self.room_text.configure(state=DISABLED)
                 self.room_text.update()
                 self.room_text.see(tk.END)
