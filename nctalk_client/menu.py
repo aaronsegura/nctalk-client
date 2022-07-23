@@ -1,7 +1,6 @@
 """Menu generator for nctalk."""
 
 import tkinter as tk
-from tkinter import ttk
 
 
 class MenuBar(tk.Menu):
@@ -12,9 +11,8 @@ class MenuBar(tk.Menu):
         self.master = master
 
         nctalk = tk.Menu(self, tearoff=False)
-        nctalk.add_command(label="Room list")  
-        nctalk.add_command(label="Join room")  
+        nctalk.add_command(label="Room list")
+        nctalk.add_command(label="Join room")
         nctalk.add_separator()
         nctalk.add_command(label="Quit (ctrl-Q)", underline=1, command=self.master.close)
-        self.add_cascade(label="nctalk",underline=0, menu=nctalk)
-        
+        self.add_cascade(label="nctalk", underline=0, menu=nctalk)

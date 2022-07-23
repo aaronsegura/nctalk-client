@@ -123,6 +123,7 @@ class LoginWindow(object):
         try:
             await self.nct.get_user()
         except nextcloud_async.exceptions.NextCloudException as e:
+            await self.master.log(f'Login failed: {e}')
             messagebox.showerror(title='Login Failure', message=e)
             self.login_button['state'] = 'normal'
             self.quit_button['state'] = 'normal'
@@ -136,6 +137,8 @@ class LoginWindow(object):
             await self.master.log(r'Success!')
             self.master.logged_in = True
             self.master.nct = self.nct
+
             if self.remember_me:
                 await self.save_credentials()
+
             self.window.destroy()

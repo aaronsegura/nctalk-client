@@ -18,6 +18,9 @@ from .menu import MenuBar
 
 class MyApp(tk.Tk):
     """A tkinter-based application for NextCloud Talk interaction."""
+
+    _LOG_TAB_NAME = '#logs'
+
     def __init__(self, loop: asyncio.BaseEventLoop, interval: float = 1/120):
         super().__init__()
 
@@ -63,25 +66,24 @@ class MyApp(tk.Tk):
 
     async def log(self, text: str, level: int = logging.INFO):
         """Write a message to the application log window and console."""
-
+        # TODO: Level filtering / debug output
+        # TODO: Text colors based on log level
         now = dt.datetime.now().strftime(r'%Y/%m/%d %H:%M:%S')
         line = f'{now} - {text}'
         await self.logs.put(line)
 
     async def watch_for_logs(self):
-        # TODO: Text colors based on log level
-        while True:
-            while logmsg := await self.logs.get():
-                self.applog.config(state=NORMAL)
-                self.applog.insert(tk.INSERT, f'{logmsg}\n')
-                self.applog.config(state=DISABLED)
-                self.applog.update()
-                print(logmsg)
+        while logmsg := await self.logs.get():
+            self.applog.config(state=NORMAL)
+            self.applog.insert(tk.INSERT, f'{logmsg}\n')
+            self.applog.config(state=DISABLED)
+            self.applog.update()
+            self.applog.see(tk.END)
+            print(logmsg)
 
     async def main_window(self):
         """The main application window."""
         self.title('Nextcloud Talk')
-        # self.geometry('800x600')
         self.bind('<Control-q>', lambda event: self.close())
 
         frame = ttk.Frame(self)
@@ -105,7 +107,7 @@ class MyApp(tk.Tk):
         self.applog = ScrolledText(self.room_tabs, height=50, width=120)
         self.applog.pack(fill='both', expand=True, padx=1, pady=1)
 
-        self.room_tabs.add(self.applog, text='#logs')
+        self.room_tabs.add(self.applog, text=self._LOG_TAB_NAME)
 
         await self.log("Startup")
 
@@ -117,11 +119,19 @@ class MyApp(tk.Tk):
             await self.initialize_rooms()
 
     def room_tab_changed(self, event):
-        pass
+        current_tab_id = self.room_tabs.index('current')
+        current_tab_name = self.room_tabs.tab(current_tab_id, 'text')
+
+        for x in self.rooms:
+            if x.displayName == current_tab_name:
+                x.update_interval = 5
+                self.loop.create_task(x.receive_messages(timeout=1))
+            else:
+                x.update_interval = 30
 
     async def initialize_rooms(self):
         """Open tabs for each room and initialize Room objects."""
-        await self.log('Fetching rooms...')
+        await self.log('Fetching active rooms...')
         rooms = await self.nct.get_conversations()
 
         for c in rooms:
