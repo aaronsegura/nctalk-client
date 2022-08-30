@@ -16,4 +16,4 @@ Installation
 
 Execution
 
-    $ nctalk-client
+    $ nctalk
