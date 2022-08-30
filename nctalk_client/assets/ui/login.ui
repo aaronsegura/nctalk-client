@@ -1,0 +1,133 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface version="1.2">
+  <object class="tk.Toplevel" id="login_window">
+    <property name="minsize">500|100</property>
+    <property name="takefocus">false</property>
+    <property name="title" translatable="yes">Nextcloud Login</property>
+    <bind sequence="&lt;KeyPress-Escape&gt;" handler="close" add="" />
+    <bind sequence="&lt;KeyPress-Return&gt;" handler="nextcloud_login" add="" />
+    <containerlayout manager="grid">
+      <property type="col" id="0" name="weight">1</property>
+      <property type="row" id="0" name="weight">1</property>
+    </containerlayout>
+    <child>
+      <object class="tk.Frame" id="credentials_frame">
+        <property name="borderwidth">5</property>
+        <property name="height">200</property>
+        <property name="takefocus">false</property>
+        <property name="width">200</property>
+        <layout manager="grid">
+          <property name="column">0</property>
+          <property name="row">0</property>
+          <property name="sticky">nsew</property>
+        </layout>
+        <containerlayout manager="grid">
+          <property type="col" id="1" name="weight">1</property>
+        </containerlayout>
+        <child>
+          <object class="tk.Label" id="endpoint_label">
+            <property name="text" translatable="yes">Endpoint:</property>
+            <layout manager="grid">
+              <property name="column">0</property>
+              <property name="row">0</property>
+              <property name="sticky">e</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="tk.Label" id="username_label">
+            <property name="text" translatable="yes">Username:</property>
+            <layout manager="grid">
+              <property name="column">0</property>
+              <property name="row">1</property>
+              <property name="sticky">e</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="tk.Label" id="password_label">
+            <property name="text" translatable="yes">Password:</property>
+            <layout manager="grid">
+              <property name="column">0</property>
+              <property name="row">2</property>
+              <property name="sticky">e</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="tk.Entry" id="endpoint_entry">
+            <property name="takefocus">true</property>
+            <property name="textvariable">string:endpoint</property>
+            <layout manager="grid">
+              <property name="column">1</property>
+              <property name="columnspan">2</property>
+              <property name="row">0</property>
+              <property name="sticky">ew</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="tk.Entry" id="username_entry">
+            <property name="takefocus">true</property>
+            <property name="textvariable">string:username</property>
+            <layout manager="grid">
+              <property name="column">1</property>
+              <property name="columnspan">2</property>
+              <property name="row">1</property>
+              <property name="sticky">ew</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="tk.Entry" id="password_entry">
+            <property name="show">*</property>
+            <property name="takefocus">true</property>
+            <property name="textvariable">string:password</property>
+            <layout manager="grid">
+              <property name="column">1</property>
+              <property name="columnspan">2</property>
+              <property name="row">2</property>
+              <property name="sticky">ew</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="tk.Checkbutton" id="remember_me_checkbox">
+            <property name="justify">center</property>
+            <property name="padx">10</property>
+            <property name="state">normal</property>
+            <property name="text" translatable="yes">Remember Me</property>
+            <property name="variable">boolean:remember_me</property>
+            <bind sequence="&lt;KeyPress-Return&gt;" handler="checkbutton_fix" add="" />
+            <layout manager="grid">
+              <property name="column">0</property>
+              <property name="columnspan">3</property>
+              <property name="row">3</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="tk.Button" id="login_button">
+            <property name="text" translatable="yes">Login</property>
+            <bind sequence="&lt;ButtonPress&gt;" handler="nextcloud_login" add="" />
+            <layout manager="grid">
+              <property name="column">0</property>
+              <property name="row">4</property>
+            </layout>
+          </object>
+        </child>
+        <child>
+          <object class="tk.Button" id="cancel_button">
+            <property name="takefocus">true</property>
+            <property name="text" translatable="yes">Cancel</property>
+            <bind sequence="&lt;Button&gt;" handler="close" add="" />
+            <layout manager="grid">
+              <property name="column">2</property>
+              <property name="row">4</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

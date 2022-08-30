@@ -1,0 +1,104 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface version="1.2">
+  <object class="tk.Toplevel" id="main_window">
+    <property name="height">200</property>
+    <property name="minsize">640|480</property>
+    <property name="resizable">both</property>
+    <property name="title" translatable="yes">Nextcloud Talk</property>
+    <property name="width">200</property>
+    <bind sequence="&lt;Control-KeyPress-q&gt;" handler="close" add="" />
+    <containerlayout manager="grid">
+      <property type="col" id="0" name="weight">1</property>
+      <property type="row" id="1" name="weight">1</property>
+    </containerlayout>
+    <child>
+      <object class="pygubu.builder.widgets.toplevelmenu" id="toplevel_menu">
+        <child>
+          <object class="tk.Menu" id="main_menu">
+            <child>
+              <object class="tk.Menuitem.Submenu" id="edit_menu">
+                <property name="label" translatable="yes">Edit</property>
+                <property name="tearoff">false</property>
+                <property name="underline">0</property>
+                <child>
+                  <object class="tk.Menuitem.Command" id="preferences_command">
+                    <property name="label" translatable="yes">Preferences</property>
+                    <property name="underline">0</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="tk.Menuitem.Submenu" id="room_menu">
+                <property name="label" translatable="yes">Rooms</property>
+                <property name="tearoff">false</property>
+                <property name="underline">0</property>
+                <child>
+                  <object class="tk.Menuitem.Command" id="join_room_command">
+                    <property name="label" translatable="yes">Join Room</property>
+                    <property name="underline">0</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="ttk.Frame" id="rooms_frame">
+        <property name="padding">2</property>
+        <layout manager="grid">
+          <property name="column">0</property>
+          <property name="row">1</property>
+          <property name="sticky">nsew</property>
+        </layout>
+        <containerlayout manager="grid">
+          <property type="col" id="0" name="minsize">200</property>
+          <property type="col" id="0" name="weight">1</property>
+          <property type="row" id="0" name="minsize">200</property>
+          <property type="row" id="0" name="weight">1</property>
+        </containerlayout>
+        <child>
+          <object class="ttk.Notebook" id="rooms_notebook">
+            <bind sequence="&lt;&lt;NotebookTabChanged&gt;&gt;" handler="room_tab_changed" add="" />
+            <layout manager="grid">
+              <property name="column">0</property>
+              <property name="row">0</property>
+              <property name="sticky">nsew</property>
+            </layout>
+            <child>
+              <object class="ttk.Notebook.Tab" id="tab1">
+                <property name="sticky">nsew</property>
+                <property name="text" translatable="yes">#nctalk</property>
+                <child>
+                  <object class="pygubu.builder.widgets.scrolledframe" id="scrolledframe1">
+                    <property name="scrolltype">vertical</property>
+                    <property name="usemousewheel">true</property>
+                    <layout manager="pack">
+                      <property name="expand">true</property>
+                      <property name="fill">both</property>
+                      <property name="side">top</property>
+                    </layout>
+                    <child>
+                      <object class="tk.Text" id="applog">
+                        <property name="height">10</property>
+                        <property name="state">disabled</property>
+                        <property name="width">50</property>
+                        <layout manager="pack">
+                          <property name="expand">true</property>
+                          <property name="fill">both</property>
+                          <property name="side">top</property>
+                        </layout>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

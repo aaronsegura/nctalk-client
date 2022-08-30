@@ -1,144 +1,123 @@
 import httpx
-import json
-import os
-import stat
+import pygubu
+import asyncio
 
-import nextcloud_async
+from nextcloud_async import NextCloudAsync
+from nextcloud_async.exceptions import NextCloudException
 
-import platformdirs as pdir
-
-import tkinter as tk
-from tkinter import ttk
 from tkinter import messagebox
 
+from .config import NCTalkConfiguration
+from .constants import PROJECT_PATH, PROJECT_UI
+from .logs import Logger
 
-class LoginWindow(object):
 
-    def __init__(
-            self,
-            master: tk.Tk,
-            user: str = None,
-            password: str = None,
-            endpoint: str = None):
+class LoginWindow:
+
+    nca: NextCloudAsync = None
+    logged_in: bool = False
+
+    def __init__(self, loop: asyncio.BaseEventLoop, logger: Logger):
         """Present the Login window."""
-        self.master = master
+        self.master = None
+        self.logger = logger
+        self.loop = loop
+        self.logged_in = False
+        self.window_open = True
 
-        self.user = tk.StringVar(value=user)
-        self.password = tk.StringVar(value=password)
-        self.endpoint = tk.StringVar(value=endpoint)
-        self.remember_me = tk.BooleanVar(
-            value=True if self.user.get() != '' or
-            self.endpoint.get() != '' else False)
+        # Load configuration from disk, if available
+        self.app_config = NCTalkConfiguration()
 
-        self.window = tk.Toplevel()
-        self.window.title('Nextcloud Login')
+        self.builder = builder = pygubu.Builder()
+        builder.add_resource_path(PROJECT_PATH)
+        builder.add_from_file(PROJECT_UI / 'login.ui')
+
+        # Build the login window and make sure it's on top.
+        self.window = builder.get_object('login_window', self.master)
+        self.builder.connect_callbacks(self)
         self.window.attributes('-topmost', True)
-        self.window.bind('<Escape>', lambda _: self.master.close())
 
-    async def start(self):
-        frame = ttk.Frame(self.window)
-        frame.pack(pady=5)
+        # Catch the window manager event for closing the window.
+        self.window.protocol('WM_DELETE_WINDOW', self.close)
 
-        endpoint_label = ttk.Label(frame, text='Endpoint:')
-        endpoint_input = tk.Entry(frame, width=40, textvariable=self.endpoint)
-        endpoint_input.bind("<Tab>", self.next_widget)
-        endpoint_label.grid(row=1, column=0, sticky='e')
-        endpoint_input.grid(row=1, column=1, columnspan=2, padx=10)
+        # Pre-configure the login fields if information is available
+        builder.tkvariables['endpoint'].set(self.app_config.get('endpoint', ''))
+        builder.tkvariables['username'].set(self.app_config.get('user', ''))
 
-        user_label = ttk.Label(frame, text='Username:')
-        user_input = tk.Entry(frame, width=40, textvariable=self.user)
-        user_input.bind("<Tab>", self.next_widget)
-        user_label.grid(row=2, column=0, sticky='e')
-        user_input.grid(row=2, column=1, columnspan=2, padx=10)
+        if self.app_config.get('user', '') != '' or \
+                self.app_config.get('endpoint', '') != '':
+            builder.get_object('remember_me_checkbox').select()
 
-        password_label = ttk.Label(frame, text='Password:')
-        password_input = tk.Entry(frame, width=40, textvariable=self.password, show='*')
-        password_input.bind('<Tab>', self.next_widget)
-        password_label.grid(row=3, column=0, sticky='e')
-        password_input.grid(row=3, column=1, columnspan=2, padx=10)
-
-        self.remember_me_check = tk.Checkbutton(
-            frame,
-            text='Remember me',
-            onvalue=True,
-            offvalue=False,
-            var=self.remember_me)
-        self.remember_me_check.grid(row=4, column=1, columnspan=2, sticky='w')
-
-        self.login_button = ttk.Button(frame, text='Login')
-        self.login_button.bind('<Return>', lambda _: self.nextcloud_login())
-        self.login_button.grid(row=5, column=2, sticky='e', pady=5, padx=10)
-
-        self.quit_button = ttk.Button(frame, text='Quit', command=lambda: self.master.close())
-        self.quit_button.bind('<Return>', lambda _: self.master.close())
-        self.quit_button.grid(row=5, column=0, sticky='e', pady=5, padx=10)
-
-        self.login_button['command'] = lambda: self.nextcloud_login()
-        user_input.bind('<Return>', lambda _: self.nextcloud_login())
-        password_input.bind('<Return>',
-                            lambda _: self.nextcloud_login())
-        endpoint_input.bind('<Return>',
-                            lambda _: self.nextcloud_login())
-
-        # Give proper Entry() input the focus, depending on
-        # what information is already available
-        if not self.endpoint.get():
-            endpoint_input.focus()
-        elif not self.user.get():
-            user_input.focus()
+        # Give focus to the first blank widget
+        if not self.app_config.get('endpoint', ''):
+            builder.get_object('endpoint_entry').focus()
+        elif not self.app_config.get('user', ''):
+            builder.get_object('user_entry').focus()
         else:
-            password_input.focus()
+            builder.get_object('password_entry').focus()
 
-    def next_widget(self, event):
-        event.widget.tk_focusNext().focus()
-        return("break")
+    def checkbutton_fix(self, event):
+        """Remember Me checkbutton hack.
+
+        If the user hits <Return> to log in while the Remember Me box has focus
+        it will be toggled before the <Return> event on the TopLevel window runs
+        nextcloud_login().  This function will switch it back to whatever
+        state it was in before the user hit Return.
+        """
+        self.builder.get_object('remember_me_checkbox').toggle()
+
+    def close(self, _=None):
+        """Shut it down."""
+        self.window_open = False
+        self.window.destroy()
 
     async def save_credentials(self):
-        config = {
-            'user': self.user.get(),
-            'endpoint': self.endpoint.get()
-        }
-        config_dir = pdir.user_config_path('nctalk')
-        config_file = f'{config_dir}/credentials.json'
-        if not config_dir.exists():
-            config_dir.mkdir(parents=True, mode=stat.S_IRWXU)
-        with open(config_file, 'w') as fp:
-            fp.write(json.dumps(config))
-        os.chmod(config_file, stat.S_IREAD | stat.S_IWRITE)
+        """Save the supplied credentials to a config file."""
+        self.app_config['user'] = self.username
+        self.app_config['endpoint'] = self.endpoint
+        self.app_config.save_config()
 
-    def nextcloud_login(self):
-        self.master.loop.create_task(self.__nextcloud_login())
+    def nextcloud_login(self, _):
+        """Spawn a job to attempt login to nextcloud."""
+        self.loop.create_task(self.__nextcloud_login())
 
     async def __nextcloud_login(self):
-        self.login_button['state'] = 'disabled'
-        self.quit_button['state'] = 'disabled'
+        login_button = self.builder.get_object('login_button')
+        cancel_button = self.builder.get_object('cancel_button')
 
-        await self.master.log(f'Logging in to {self.endpoint.get()}')
-        self.nct = nextcloud_async.NextCloudAsync(
+        login_button['state'] = 'disabled'
+        cancel_button['state'] = 'disabled'
+
+        self.username = self.builder.tkvariables['username'].get()
+        password = self.builder.tkvariables['password'].get()
+        self.endpoint = self.builder.tkvariables['endpoint'].get()
+        remember_me = self.builder.tkvariables['remember_me'].get()
+
+        await self.logger.log(f'Logging in to {self.endpoint}')
+        self.nca = NextCloudAsync(
             client=httpx.AsyncClient(timeout=10),
-            user=self.user.get(),
-            password=self.password.get(),
-            endpoint=self.endpoint.get())
+            user=self.username,
+            password=password,
+            endpoint=self.endpoint)
 
         try:
-            await self.nct.get_user()
-        except nextcloud_async.exceptions.NextCloudException as e:
-            await self.master.log(f'Login failed: {e}')
-            messagebox.showerror(title='Login Failure', message=e)
-            self.login_button['state'] = 'normal'
-            self.quit_button['state'] = 'normal'
+            await self.nca.get_user()
+        except NextCloudException as e:
+            await self.logger.log(f'Login failed: {e}')
+            messagebox.showerror(title='Login Failure', message=e, parent=self.window)
+            login_button['state'] = 'normal'
+            cancel_button['state'] = 'normal'
         except (httpx.ConnectError, httpx.UnsupportedProtocol):
             messagebox.showerror(
                 title='Connection Error',
-                message=f'Unable to connect to {self.endpoint.get()}')
-            self.login_button['state'] = 'normal'
-            self.quit_button['state'] = 'normal'
+                message=f'Unable to connect to {self.endpoint}', parent=self.window)
+            login_button['state'] = 'normal'
+            cancel_button['state'] = 'normal'
         else:
-            await self.master.log(r'Success!')
-            self.master.logged_in = True
-            self.master.nct = self.nct
+            await self.logger.log(r'Success!')
+            self.logged_in = True
 
-            if self.remember_me:
+            if remember_me:
                 await self.save_credentials()
 
             self.window.destroy()
