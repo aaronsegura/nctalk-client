@@ -29,6 +29,9 @@ class NCTalkApp():
         self.tasks = [
             self.loop.create_task(self.updater())]
 
+    async def run(self):
+        self.start_app()
+
     def start_app(self):
         self.builder = builder = pygubu.Builder()
         builder.add_resource_path(PROJECT_PATH)
@@ -44,6 +47,7 @@ class NCTalkApp():
         self.tasks.append(
             self.loop.create_task(self.logger.process_queue()))
 
+        # Catch window manager close event
         self.window.protocol('WM_DELETE_WINDOW', self.close)
 
         # Set up notebook for chat rooms
@@ -56,9 +60,6 @@ class NCTalkApp():
         # Save auth task for removal later
         self.auth_task = self.loop.create_task(self.wait_for_auth())
         self.tasks.append(self.auth_task)
-
-    async def run(self):
-        self.start_app()
 
     async def updater(self):
         """Iterate over the asyncio event loop."""
@@ -80,20 +81,21 @@ class NCTalkApp():
             # used by login_window.
             self.tasks.remove(self.auth_task)
             self.nca = self.login_window.nca
+            self.user = self.login_window.user
             self.login_window = None
             await self.initialize_rooms()
 
     async def initialize_rooms(self):
         """Open tabs for each room and initialize Room objects."""
-        await self.logger.log('Fetching active rooms...')
+        await self.logger('Fetching active rooms...')
         rooms = await self.nca.get_conversations()
 
         for c in rooms:
-            await self.logger.log(f'Joining room "{c["displayName"]}"')
+            await self.logger(f'Joining room "{c["displayName"]}"')
             self.loop.create_task(self.new_room(c))
 
     async def new_room(self, data):
-        room = Room(self.nca, self.loop, self.logger, self.room_tabs, data)
+        room = Room(self.nca, self.loop, self.logger, self.room_tabs, self.user, data)
         self.rooms.append(room)
         self.room_tabs.add(room.widget, text=room.displayName, state='disabled')
 
@@ -104,11 +106,10 @@ class NCTalkApp():
         for x in self.rooms:
             if x.displayName == current_tab_name:
                 x.update_interval = 5
-                self.loop.create_task(x.receive_messages(timeout=1))
+                asyncio.gather(x.update_participants())
             else:
                 x.update_interval = 30
 
     def close(self, _: None = None):
         self.loop.shutdown()
-        self.loop.stop()
         self.window.destroy()

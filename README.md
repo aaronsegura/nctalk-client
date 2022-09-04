@@ -17,3 +17,5 @@ Installation
 Execution
 
     $ nctalk
+
+[[Icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/information)]

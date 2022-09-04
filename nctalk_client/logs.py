@@ -13,6 +13,9 @@ class Logger:
     def __init__(self, log_widget):
         self.log_widget = log_widget
 
+    async def __call__(self, *args, **kwargs):
+        await self.log(*args, **kwargs)
+
     async def log(self, text: str, level: int = logging.INFO):
         """Write a message to the application log window and console."""
         # TODO: Level filtering / debug output
@@ -26,7 +29,7 @@ class Logger:
         while logmsg := await self.queue.get():
             async with self.lock:
                 self.log_widget.config(state='normal')
-                self.log_widget.insert(tk.INSERT, f'{logmsg}\n')
+                self.log_widget.insert(tk.END, f'{logmsg}\n')
                 self.log_widget.config(state='disabled')
                 self.log_widget.update()
                 self.log_widget.see(tk.END)

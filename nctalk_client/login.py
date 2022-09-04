@@ -7,6 +7,8 @@ from nextcloud_async.exceptions import NextCloudException
 
 from tkinter import messagebox
 
+from typing import Dict, Any
+
 from .config import NCTalkConfiguration
 from .constants import PROJECT_PATH, PROJECT_UI
 from .logs import Logger
@@ -24,6 +26,8 @@ class LoginWindow:
         self.loop = loop
         self.logged_in = False
         self.window_open = True
+
+        self.user: Dict[str, Any] = {}
 
         # Load configuration from disk, if available
         self.app_config = NCTalkConfiguration()
@@ -101,7 +105,7 @@ class LoginWindow:
             endpoint=self.endpoint)
 
         try:
-            await self.nca.get_user()
+            self.user = await self.nca.get_user()
         except NextCloudException as e:
             await self.logger.log(f'Login failed: {e}')
             messagebox.showerror(title='Login Failure', message=e, parent=self.window)
