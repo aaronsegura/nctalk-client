@@ -1,0 +1,150 @@
+<?xml version='1.0' encoding='utf-8'?>
+<interface version="1.3">
+  <object class="tk.Toplevel" id="preferences_window" named="True">
+    <property name="title" translatable="yes">NCTalk Preferences</property>
+    <containerlayout manager="grid">
+      <property type="col" id="0" name="weight">1</property>
+      <property type="row" id="0" name="weight">1</property>
+    </containerlayout>
+    <child>
+      <object class="ttk.Notebook" id="preferences_notebook" named="True">
+        <layout manager="grid">
+          <property name="column">0</property>
+          <property name="row">0</property>
+          <property name="sticky">nsew</property>
+        </layout>
+        <child>
+          <object class="ttk.Notebook.Tab" id="appearance_tab" named="True">
+            <property name="sticky">nsew</property>
+            <property name="text" translatable="yes">Appearance</property>
+            <child>
+              <object class="ttk.Frame" id="appearance_frame" named="True">
+                <property name="height">200</property>
+                <layout manager="grid">
+                  <property name="column">0</property>
+                  <property name="row">0</property>
+                  <property name="sticky">nsew</property>
+                </layout>
+                <containerlayout manager="grid">
+                  <property type="col" id="0" name="weight">1</property>
+                  <property type="col" id="1" name="weight">1</property>
+                </containerlayout>
+                <child>
+                  <object class="ttk.Labelframe" id="size_selection_frame" named="True">
+                    <property name="text" translatable="yes">Sizes</property>
+                    <layout manager="grid">
+                      <property name="column">0</property>
+                      <property name="row">0</property>
+                      <property name="sticky">new</property>
+                    </layout>
+                    <containerlayout manager="grid">
+                      <property type="col" id="0" name="weight">1</property>
+                    </containerlayout>
+                    <child>
+                      <object class="ttk.Label" id="font_size_label" named="True">
+                        <property name="text" translatable="yes">Font</property>
+                        <layout manager="grid">
+                          <property name="column">0</property>
+                          <property name="row">0</property>
+                        </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="ttkwidgets.FontSizeDropdown" id="font_size_dropdown" named="True">
+                        <property name="callback" type="command" cbtype="simple">set_font_size</property>
+                        <layout manager="grid">
+                          <property name="column">1</property>
+                          <property name="row">0</property>
+                          <property name="sticky">new</property>
+                        </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="ttk.Label" id="icon_size_label" named="True">
+                        <property name="text" translatable="yes">Icons</property>
+                        <layout manager="grid">
+                          <property name="column">0</property>
+                          <property name="row">1</property>
+                        </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="ttk.Combobox" id="icon_combobox" named="True">
+                        <property name="postcommand" type="command" cbtype="simple">fill_icon_sizes</property>
+                        <property name="takefocus">true</property>
+                        <property name="textvariable">int:icon_size</property>
+                        <layout manager="grid">
+                          <property name="column">1</property>
+                          <property name="row">1</property>
+                          <property name="sticky">ew</property>
+                        </layout>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="ttk.Labelframe" id="theme_selection_frame" named="True">
+                    <property name="height">200</property>
+                    <property name="text" translatable="yes">Theme</property>
+                    <property name="width">200</property>
+                    <layout manager="grid">
+                      <property name="column">1</property>
+                      <property name="row">0</property>
+                      <property name="sticky">nsew</property>
+                    </layout>
+                    <containerlayout manager="grid">
+                      <property type="col" id="0" name="weight">1</property>
+                    </containerlayout>
+                    <child>
+                      <object class="pygubu.builder.widgets.scrollbarhelper" id="scrollbarhelper1">
+                        <property name="scrolltype">vertical</property>
+                        <property name="usemousewheel">true</property>
+                        <layout manager="grid">
+                          <property name="column">0</property>
+                          <property name="row">1</property>
+                          <property name="sticky">ew</property>
+                        </layout>
+                        <child>
+                          <object class="tk.Listbox" id="theme_listbox" named="True">
+                            <property name="exportselection">false</property>
+                            <property name="listvariable">string:theme_list</property>
+                            <property name="selectmode">single</property>
+                            <bind sequence="&lt;&lt;ListboxSelect&gt;&gt;" handler="set_theme" add="" />
+                            <layout manager="grid">
+                              <property name="column">0</property>
+                              <property name="row">0</property>
+                            </layout>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+    <child>
+      <object class="ttk.Frame" id="control_frame" named="True">
+        <layout manager="grid">
+          <property name="column">0</property>
+          <property name="row">1</property>
+          <property name="sticky">ew</property>
+        </layout>
+        <child>
+          <object class="ttk.Button" id="save_button" named="True">
+            <property name="text" translatable="yes">Save Changes</property>
+            <bind sequence="&lt;Button&gt;" handler="save_preferences" add="" />
+            <layout manager="grid">
+              <property name="column">0</property>
+              <property name="row">0</property>
+              <property name="sticky">e</property>
+            </layout>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
+</interface>

@@ -3,6 +3,8 @@
 import asyncio
 import pygubu
 
+from tkinter import ttk, font as tkfont
+
 from nextcloud_async import NextCloudAsync
 
 from .config import NCTalkConfiguration
@@ -10,7 +12,15 @@ from .logs import Logger
 from .login import LoginWindow
 from .rooms import Room
 from .task_manager import TaskManager
+from .preferences import PreferencesWindow
 from .constants import PROJECT_PATH, PROJECT_UI, UPDATE_INTERVAL
+
+try:
+    import ttkthemes
+except ModuleNotFoundError:
+    HAS_TTKTHEMES = False
+else:
+    HAS_TTKTHEMES = True
 
 
 class NCTalkApp():
@@ -40,6 +50,19 @@ class NCTalkApp():
         # Load the main app window
         self.window = self.builder.get_object('main_window', self.master)
         builder.connect_callbacks(self)
+
+        # Set up theme
+        if HAS_TTKTHEMES:
+            self.style = ttkthemes.ThemedStyle()
+        else:
+            self.style = ttk.Style()
+
+        # Set user-defined theme, if available
+        user_selected_theme = self.app_config.get('theme', 'default')
+        self.style.theme_use(user_selected_theme)
+
+        self.font = tkfont.nametofont('TkDefaultFont')
+        self.font.configure(size=self.app_config.get('font_size', '11'))
 
         # Prepare the logging subsystem
         self.applog = self.builder.get_object('applog', self.master)
@@ -109,6 +132,9 @@ class NCTalkApp():
                 asyncio.gather(x.update_participants())
             else:
                 x.update_interval = 30
+
+    def edit_preferences(self):
+        self.preferences_window = PreferencesWindow(self.style, self.font)
 
     def close(self, _: None = None):
         self.loop.shutdown()

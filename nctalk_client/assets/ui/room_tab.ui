@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8'?>
-<interface version="1.2">
-  <object class="tk.Frame" id="room_tab">
+<interface version="1.3">
+  <object class="ttk.Frame" id="room_tab" named="True">
     <property name="height">200</property>
     <property name="width">200</property>
     <layout manager="grid">
@@ -13,7 +13,7 @@
       <property type="row" id="1" name="weight">1</property>
     </containerlayout>
     <child>
-      <object class="ttk.Frame" id="room_controls">
+      <object class="ttk.Frame" id="room_controls" named="True">
         <property name="height">200</property>
         <property name="width">200</property>
         <layout manager="grid">
@@ -26,18 +26,15 @@
           <property type="col" id="0" name="weight">1</property>
         </containerlayout>
         <child>
-          <object class="tk.LabelFrame" id="controls_frame">
-            <property name="height">1</property>
+          <object class="ttk.Labelframe" id="controls_frame" named="True">
             <property name="text" translatable="yes">Controls</property>
             <layout manager="grid">
               <property name="column">0</property>
               <property name="row">0</property>
-              <property name="sticky">ew</property>
+              <property name="sticky">nsew</property>
             </layout>
             <child>
-              <object class="tk.Button" id="leave_button">
-                <property name="bitmap">error</property>
-                <property name="relief">flat</property>
+              <object class="ttk.Button" id="leave_button" named="True">
                 <property name="text" translatable="yes">Leave</property>
                 <layout manager="grid">
                   <property name="column">0</property>
@@ -49,19 +46,24 @@
           </object>
         </child>
         <child>
-          <object class="tk.LabelFrame" id="health_frame">
-            <property name="height">1</property>
-            <property name="pady">2</property>
-            <property name="text" translatable="yes">Health</property>
+          <object class="ttk.Labelframe" id="health_frame" named="True">
+            <property name="labelanchor">n</property>
+            <property name="relief">sunken</property>
+            <property name="text" translatable="yes">Status</property>
             <layout manager="grid">
               <property name="column">1</property>
               <property name="row">0</property>
+              <property name="sticky">nsew</property>
             </layout>
+            <containerlayout manager="grid">
+              <property type="col" id="0" name="weight">1</property>
+              <property type="row" id="0" name="weight">1</property>
+            </containerlayout>
             <child>
-              <object class="ttk.Label" id="health_label">
-                <property name="image">healthy.png</property>
-                <layout manager="pack">
-                  <property name="side">top</property>
+              <object class="ttk.Label" id="status_label" named="True">
+                <layout manager="grid">
+                  <property name="column">0</property>
+                  <property name="row">0</property>
                 </layout>
               </object>
             </child>
@@ -70,7 +72,7 @@
       </object>
     </child>
     <child>
-      <object class="pygubu.builder.widgets.tkscrollbarhelper" id="chat_scroll">
+      <object class="pygubu.builder.widgets.tkscrollbarhelper" id="chat_scroll" named="True">
         <property name="scrolltype">vertical</property>
         <property name="takefocus">false</property>
         <property name="usemousewheel">true</property>
@@ -82,7 +84,7 @@
       </object>
     </child>
     <child>
-      <object class="pygubu.builder.widgets.tkscrollbarhelper" id="userlist_scroll">
+      <object class="pygubu.builder.widgets.tkscrollbarhelper" id="userlist_scroll" named="True">
         <property name="scrolltype">vertical</property>
         <property name="takefocus">false</property>
         <property name="usemousewheel">true</property>
@@ -95,7 +97,7 @@
       </object>
     </child>
     <child>
-      <object class="ttk.Frame" id="inputs_frame">
+      <object class="ttk.Frame" id="inputs_frame" named="True">
         <property name="height">200</property>
         <property name="width">200</property>
         <layout manager="grid">
@@ -108,7 +110,7 @@
           <property type="col" id="1" name="weight">1</property>
         </containerlayout>
         <child>
-          <object class="ttk.Button" id="attach_button">
+          <object class="ttk.Button" id="attach_button" named="True">
             <property name="text" translatable="yes">Attach</property>
             <layout manager="grid">
               <property name="column">0</property>
@@ -118,7 +120,7 @@
           </object>
         </child>
         <child>
-          <object class="ttk.Button" id="send_button">
+          <object class="ttk.Button" id="send_button" named="True">
             <property name="text" translatable="yes">Send</property>
             <layout manager="grid">
               <property name="column">2</property>
@@ -128,7 +130,7 @@
           </object>
         </child>
         <child>
-          <object class="tk.Text" id="text_entry">
+          <object class="tk.Text" id="text_entry" named="True">
             <property name="borderwidth">2</property>
             <property name="exportselection">true</property>
             <property name="height">2</property>

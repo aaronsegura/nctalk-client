@@ -5,6 +5,7 @@ import asyncio
 from nextcloud_async import NextCloudAsync
 from nextcloud_async.exceptions import NextCloudException
 
+import tkinter as tk
 from tkinter import messagebox
 
 from typing import Dict, Any
@@ -32,6 +33,8 @@ class LoginWindow:
         # Load configuration from disk, if available
         self.app_config = NCTalkConfiguration()
 
+        self.remember_me = tk.BooleanVar(value=False)
+
         self.builder = builder = pygubu.Builder()
         builder.add_resource_path(PROJECT_PATH)
         builder.add_from_file(PROJECT_UI / 'login.ui')
@@ -40,7 +43,9 @@ class LoginWindow:
         self.window = builder.get_object('login_window', self.master)
         self.builder.connect_callbacks(self)
         self.window.attributes('-topmost', True)
-
+        builder.import_variables(
+            self, ["endpoint", "username", "password", "remember_me"]
+        )
         # Catch the window manager event for closing the window.
         self.window.protocol('WM_DELETE_WINDOW', self.close)
 
@@ -50,7 +55,7 @@ class LoginWindow:
 
         if self.app_config.get('user', '') != '' or \
                 self.app_config.get('endpoint', '') != '':
-            builder.get_object('remember_me_checkbox').select()
+            self.remember_me.set(True)
 
         # Give focus to the first blank widget
         if not self.app_config.get('endpoint', ''):
@@ -68,7 +73,7 @@ class LoginWindow:
         nextcloud_login().  This function will switch it back to whatever
         state it was in before the user hit Return.
         """
-        self.builder.get_object('remember_me_checkbox').toggle()
+        self.builder.get_object('remember_me_checkbutton').toggle()
 
     def close(self, _=None):
         """Shut it down."""

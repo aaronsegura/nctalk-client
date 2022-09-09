@@ -75,7 +75,6 @@ class Room(object):
         self.receive_messages_task = self.loop.create_task(self.receive_messages_loop())
         self.process_messages_task = self.loop.create_task(self.process_new_messages_loop())
 
-
     @property
     def update_interval(self):
         return self.__update_interval
@@ -122,7 +121,7 @@ class Room(object):
 
     async def update_participants(self):
         """Update the participants list."""
-        await self.room_health('updating')
+        await self.room_status('updating')
         await self.logger(f'[{self.displayName}] Updating participant list')
 
         participants = await self.nca.get_conversation_participants(
@@ -132,7 +131,7 @@ class Room(object):
         for part in sorted(participants, key=lambda x: x['actorId']):
             self.user_list.insert(tk.END, part['actorId'])
 
-        await self.room_health('healthy')
+        await self.room_status('healthy')
 
     async def receive_messages_loop(self):
         while True:
@@ -149,7 +148,7 @@ class Room(object):
             except httpx.RemoteProtocolError:
                 await self.logger(
                     f'[{self.displayName}] Server disconnected without response.')
-                await self.room_health('exception')
+                await self.room_status('exception')
 
     async def receive_messages(
             self,
@@ -157,7 +156,7 @@ class Room(object):
             limit: int = 0,
             timeout: int = 0):
         await self.logger(f'[{self.displayName}] Polling for new messages')
-        await self.room_health('updating')
+        await self.room_status('updating')
 
         raised = False
         try:
@@ -173,13 +172,13 @@ class Room(object):
         except httpcore.RemoteProtocolError:
             self.logger(f'[{self.displayName}] Server closed connection prematurely.')
             raised = True
-            await self.room_health('exception')
+            await self.room_status('exception')
         else:
             self.last_read = headers['X-Chat-Last-Given']
             self.last_common_read = headers['X-Chat-Last-Common-Read']
         finally:
             if not raised:
-                await self.room_health('healthy')
+                await self.room_status('healthy')
             else:
                 await self.logger(f'[{self.displayName}] Setting exception health')
 
@@ -200,8 +199,8 @@ class Room(object):
                 self.last_read = msg['id']
                 self.last_message_date = msg_dt.strftime(r'%d')
                 self.tab_configure(state='normal')
-                #if self.displayName == 'Precision RV':
-                #    print(msg)
+                # if self.displayName == 'Precision RV':
+                #     print(msg)
 
             await asyncio.sleep(1/120)
 
@@ -212,8 +211,8 @@ class Room(object):
         self.room_text.update()
         self.room_text.see(tk.END)
 
-    async def room_health(self, level: str):
-        health_label: ttk.Label = self.builder.get_object('health_label')
+    async def room_status(self, level: str):
+        status_label: ttk.Label = self.builder.get_object('status_label')
         match level:
             case 'healthy':
                 state_img = await self.icons('healthy', 16)
@@ -222,9 +221,9 @@ class Room(object):
             case 'exception':
                 state_img = await self.icons('exception', 16)
 
-        health_label.configure(image=state_img)
-        health_label.image = state_img
-        health_label.update()
+        status_label.configure(image=state_img)
+        status_label.image = state_img
+        status_label.update()
 
     def send_message(self, _):
         """Send the user's message to the server.
