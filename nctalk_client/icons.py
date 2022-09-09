@@ -26,7 +26,7 @@ class Icons:
     async def __call__(self, *args, **kwargs):
         return await self.load_icon(*args, **kwargs)
 
-    async def load_icon(self, icon_name: str, size: int):
+    async def load_icon(self, icon_name: str, size: int) -> tk.PhotoImage:
         """Return icon at proper size.
 
         Args:
@@ -39,6 +39,8 @@ class Icons:
 
         """
         icon_key = f'{icon_name}_{size}'
+        icon: tk.PhotoImage
+
         if self.__in_memory_cache(icon_key):
             icon = tk.PhotoImage(data=self.icon_memory_cache[icon_key])
         elif self.__in_disk_cache(icon_key):
@@ -86,8 +88,8 @@ class Icons:
             buffer.seek(0)
             pil_image = Image.open(buffer, formats=['PNG'])
             resized_image = pil_image.resize(size=(size, size))
-            tk_img = self.__pil_to_tk(resized_image, buffer)
-            return tk_img
+            tk_image = self.__pil_to_tk(resized_image, buffer)
+            return tk_image
 
     async def __save_to_disk_cache(self, icon_key: str, icon: Image):
         """Save resized icon to cache directory and memory cache.

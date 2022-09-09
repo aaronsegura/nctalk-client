@@ -80,6 +80,23 @@
                         </layout>
                       </object>
                     </child>
+                    <child>
+                      <object class="ttk.Label" id="thumbnail_label" named="True">
+                        <property name="text" translatable="yes">Thumbnail</property>
+                        <layout manager="grid">
+                          <property name="column">0</property>
+                          <property name="row">2</property>
+                        </layout>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="ttk.Combobox" id="combobox1">
+                        <layout manager="grid">
+                          <property name="column">1</property>
+                          <property name="row">2</property>
+                        </layout>
+                      </object>
+                    </child>
                   </object>
                 </child>
                 <child>
@@ -120,6 +137,21 @@
                     </child>
                   </object>
                 </child>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child>
+          <object class="ttk.Notebook.Tab" id="caching_tab" named="True">
+            <property name="text" translatable="yes">Caching</property>
+            <child>
+              <object class="ttk.Frame" id="caching_frame" named="True">
+                <property name="height">200</property>
+                <property name="width">200</property>
+                <layout manager="grid">
+                  <property name="column">0</property>
+                  <property name="row">0</property>
+                </layout>
               </object>
             </child>
           </object>

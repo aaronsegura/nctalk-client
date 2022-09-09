@@ -18,6 +18,8 @@ from nextcloud_async.exceptions import NextCloudNotModified
 from .icons import Icons
 from .constants import PROJECT_PATH, PROJECT_UI
 from .logs import Logger
+from .messages import Message
+from .images import Image as Image
 
 
 class Room(object):
@@ -41,6 +43,7 @@ class Room(object):
 
         self.user = user
 
+        self.images = []
         self.icons = Icons()
         self.msg_queue = asyncio.Queue()
 
@@ -62,7 +65,11 @@ class Room(object):
 
         self.builder.connect_callbacks(self)
 
-        self.room_text = tk.Text(self.builder.get_object('chat_scroll'), wrap='word')
+        self.room_text: tk.Text = tk.Text(
+            self.builder.get_object('chat_scroll'),
+            wrap='word',
+            exportselection=True)
+
         self.user_list = tk.Listbox(self.builder.get_object('userlist_scroll'))
         self.user_list.insert(tk.END, "Updating...")
 
@@ -188,28 +195,48 @@ class Room(object):
     async def process_new_messages_loop(self):
         while True:
             while msg := await self.msg_queue.get():
-                msg_dt = dt.datetime.fromtimestamp(msg['timestamp'])
-                msg_timestamp = msg_dt.strftime(r'%H:%M:%S')
-
-                if msg_dt.strftime(r'%d') != self.last_message_date:
-                    await self.insert_new_message(f'\n---{msg_dt.strftime(r"%Y-%m-%d")}---\n')
-
-                line = f'({msg_timestamp}) {msg["actorDisplayName"]}: {msg["message"]}\n'
-                await self.insert_new_message(line)
+                await self.insert_new_message(msg)
                 self.last_read = msg['id']
-                self.last_message_date = msg_dt.strftime(r'%d')
                 self.tab_configure(state='normal')
-                # if self.displayName == 'Precision RV':
-                #     print(msg)
-
             await asyncio.sleep(1/120)
 
-    async def insert_new_message(self, msg):
+    async def insert_new_message(self, msg: Message):
+        msg_dt = dt.datetime.fromtimestamp(msg['timestamp'])
+        self.last_message_date = msg_dt.strftime(r'%d')
+
+        if msg_dt.strftime(r'%d') != self.last_message_date:
+            await self.insert_new_message(f'\n---{msg_dt.strftime(r"%Y-%m-%d")}---\n')
+
+        msg_timestamp = msg_dt.strftime(r'%H:%M:%S')
+        line = f'({msg_timestamp}) {msg["actorDisplayName"]}: {msg["message"]}\n'
+
         self.room_text.configure(state='normal')
-        self.room_text.insert(tk.INSERT, msg)
+        if msg['message'] == '{file}' and 'image' in \
+                msg['messageParameters']['file']['mimetype']:
+            img = Image()
+            image_path = msg['messageParameters']['file']['path']
+            try:
+                await img.from_file(self.nca, image_path)
+            except httpx.RemoteProtocolError:
+                try:
+                    await img.from_file(self.nca, image_path)
+                except httpx.RemoteProtocolError:
+                    self.room_status('exception')
+
+            image = img.image(height=200)
+            self.room_text.insert(
+                tk.INSERT,
+                f'({msg_timestamp}) {msg["actorDisplayName"]} [Sent Attachment]\n')
+            self.room_text.insert(tk.INSERT, '           ')
+            self.room_text.image_create(tk.INSERT, image=image)
+            self.room_text.insert(tk.INSERT, '\n\n')
+            self.images.append(image)
+        else:
+            self.room_text.insert(tk.INSERT, line)
+            self.room_text.update()
+            self.room_text.see(tk.END)
+
         self.room_text.configure(state='disabled')
-        self.room_text.update()
-        self.room_text.see(tk.END)
 
     async def room_status(self, level: str):
         status_label: ttk.Label = self.builder.get_object('status_label')
@@ -226,21 +253,18 @@ class Room(object):
         status_label.update()
 
     def send_message(self, _):
-        """Send the user's message to the server.
-
-        Returns
-        -------
-            _type_: _description_
-        """
+        """Send the user's message to the server."""
         message = self.text_entry.get('1.0', tk.END).strip()
         self.text_entry.mark_set(tk.INSERT, "1.0")
         self.text_entry.delete('1.0', tk.END)
         asyncio.gather(self.nca.send_to_conversation(self.token, message))
-        asyncio.gather(self.receive_messages(look_into_future=1))
         return 'break'
 
     def insert_newline(self, e):
-        """This function intentionally left blank."""
+        """This function intentionally left blank.
+
+        This handles Alt-Enter keypress event.
+        """
         pass
 
     def close_tab(self):
