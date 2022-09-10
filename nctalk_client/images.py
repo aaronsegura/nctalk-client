@@ -1,13 +1,11 @@
 import os
 import stat
 import aiofiles
-import asyncio
 import hashlib
 
 from io import BytesIO
 
 import platformdirs as pdir
-import tkinter as tk
 
 from PIL import ImageTk, Image as ImagePIL
 
@@ -35,9 +33,11 @@ class Image:
     def hashed_cache_filename(self):
         return self.hashed_cache_directory / self.sha256
 
-    @property
-    def __in_cache(self):
-        return os.path.exists(self.hashed_cache_filename)
+    def __in_cache(self, height: int = 0):
+        if height == 0:
+            return os.path.exists(self.hashed_cache_filename)
+        else:
+            return os.path.exists(f'{self.hashed_cache_filename}_{height}')
 
     def __cache_mkdir(self):
         self.hashed_cache_directory.mkdir(parents=True, exist_ok=True, mode=stat.S_IRWXU)
@@ -57,7 +57,7 @@ class Image:
         """Save image from NextCloud path."""
         self.sha256 = hashlib.sha256(bytes(f'{nca.endpoint}/{path}', 'utf-8')).hexdigest()
 
-        if self.__in_cache:
+        if self.__in_cache():
             return
 
         image = await nca.download_file(path)
@@ -74,12 +74,19 @@ class Image:
         if height == 0:
             return ImageTk.PhotoImage(ImagePIL.open(self.hashed_cache_filename))
         else:
-            print("X")
-            full_size_image = ImagePIL.open(self.hashed_cache_filename)
-            print("Y")
-            resized_image = full_size_image.resize(size=(320, 200))
-            print("Z")
-            return ImageTk.PhotoImage(resized_image)
+            if self.__in_cache(height=height):
+                return ImageTk.PhotoImage(
+                    ImagePIL.open(f'{self.hashed_cache_filename}_{height}'))
+            else:
+                full_size_image = ImagePIL.open(self.hashed_cache_filename)
+                if height < full_size_image.height:
+                    height_ratio = full_size_image.height / height
+                    new_width = int(full_size_image.width / height_ratio)
+                    resized_image = full_size_image.resize(size=(new_width, height))
+                    resized_image.save(f'{self.hashed_cache_filename}_{height}', format='PNG')
+                    return ImageTk.PhotoImage(resized_image)
+                else:
+                    return ImageTk.PhotoImage(ImagePIL.open(self.hashed_cache_filename))
 
     @property
     async def thumbnail(self):
